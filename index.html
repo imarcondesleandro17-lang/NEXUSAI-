@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NexusAI - Gerador & Chat</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script>
+tailwind.config={theme:{extend:{colors:{
+dark:{900:'#0a0a0a',800:'#121212',700:'#1e1e1e'},
+brand:{500:'#8b5cf6',600:'#7c3aed',400:'#a78bfa'}
+},fontFamily:{sans:['Inter','sans-serif']}}}};
+</script>
+<style>
+body{background:#0a0a0a;color:#e5e5e5}
+::-webkit-scrollbar{width:8px}::-webkit-scrollbar-track{background:#121212}
+::-webkit-scrollbar-thumb{background:#333;border-radius:4px}::-webkit-scrollbar-thumb:hover{background:#8b5cf6}
+.glow-text{text-shadow:0 0 10px rgba(139,92,246,.5)}
+.btn-primary{background:linear-gradient(135deg,#8b5cf6 0%,#6d28d9 100%);transition:.3s}
+.btn-primary:hover{box-shadow:0 0 15px rgba(139,92,246,.4);transform:translateY(-1px)}
+.typing-dot{animation:typing 1.4s infinite ease-in-out both}
+.typing-dot:nth-child(1){animation-delay:-.32s}.typing-dot:nth-child(2){animation-delay:-.16s}
+@keyframes typing{0%,80%,100%{transform:scale(0)}40%{transform:scale(1)}}
+.fade-in{animation:fadeIn .5s ease-in}@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.glass-panel{background:rgba(18,18,18,.95);backdrop-filter:blur(10px);border:1px solid rgba(139,92,246,.2)}
+.ai-card:hover{transform:translateY(-2px);box-shadow:0 10px 30px rgba(139,92,246,.08)}
+</style>
+</head>
+<body class="h-screen flex overflow-hidden font-sans selection:bg-brand-500 selection:text-white">
+
+<div id="login-screen" class="fixed inset-0 z-50 flex items-center justify-center bg-dark-900 bg-opacity-95 transition-opacity duration-500">
+  <div class="glass-panel p-8 rounded-2xl shadow-2xl max-w-md w-full text-center relative overflow-hidden mx-4">
+    <div class="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-brand-600 to-purple-500"></div>
+    <div class="mb-8">
+      <div class="w-16 h-16 bg-brand-600 rounded-xl mx-auto flex items-center justify-center mb-4 shadow-lg shadow-brand-500/30">
+        <i class="fa-solid fa-robot text-3xl text-white"></i>
+      </div>
+      <h1 class="text-3xl font-bold text-white mb-2">Nexus<span class="text-brand-400">AI</span></h1>
+      <p class="text-gray-400">Sua central de criação e inteligência.</p>
+    </div>
+    <button onclick="handleGoogleLogin()" class="w-full bg-white hover:bg-gray-100 text-gray-800 font-semibold py-3 px-4 rounded-lg flex items-center justify-center gap-3 transition-all duration-200">
+      <img src="https://www.svgrepo.com/show/475656/google-color.svg" class="w-5 h-5" alt="Google Logo">
+      <span>Continuar com Google</span>
+    </button>
+    <p class="mt-6 text-xs text-gray-500">Ao continuar, você concorda com nossos Termos de Serviço.<br>Seus projetos são salvos automaticamente.</p>
+  </div>
+</div>
+
+<aside class="w-64 bg-dark-800 border-r border-gray-800 flex-col hidden md:flex z-20">
+  <div class="p-6 flex items-center gap-3 border-b border-gray-800">
+    <div class="w-8 h-8 bg-brand-600 rounded-lg flex items-center justify-center"><i class="fa-solid fa-robot text-white text-sm"></i></div>
+    <span class="font-bold text-lg tracking-tight">Nexus<span class="text-brand-400">AI</span></span>
+  </div>
+  <nav class="flex-1 p-4 space-y-2 overflow-y-auto">
+    <div class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 px-2 mt-2">Menu Principal</div>
+    <button onclick="switchTab('chat')" id="nav-chat" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-brand-600/10 text-brand-400 border border-brand-600/20 transition-all"><i class="fa-regular fa-comments"></i><span>Conversar com IA</span></button>
+    <button onclick="switchTab('image')" id="nav-image" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-400 hover:bg-dark-700 hover:text-white transition-all"><i class="fa-regular fa-image"></i><span>Gerar Imagens</span></button>
+    <button onclick="switchTab('video')" id="nav-video" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-400 hover:bg-dark-700 hover:text-white transition-all"><i class="fa-solid fa-film"></i><span>Gerar Vídeos</span></button>
+    <button onclick="switchTab('aihub')" id="nav-aihub" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-400 hover:bg-dark-700 hover:text-white transition-all"><i class="fa-solid fa-layer-group"></i><span>Central de IAs</span></button>
+    <div class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 px-2 mt-6">Biblioteca</div>
+    <button onclick="switchTab('projects')" id="nav-projects" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-gray-400 hover:bg-dark-700 hover:text-white transition-all"><i class="fa-solid fa-folder-open"></i><span>Meus Projetos</span></button>
+  </nav>
+  <div class="p-4 border-t border-gray-800">
+    <div class="flex items-center gap-3 p-2 rounded-lg hover:bg-dark-700 cursor-pointer">
+      <img id="user-avatar" src="" class="w-10 h-10 rounded-full border-2 border-brand-500 object-cover hidden">
+      <div class="flex-1 min-w-0"><p id="user-name" class="text-sm font-medium text-white truncate">Visitante</p><p class="text-xs text-gray-500 truncate">Free Plan</p></div>
+      <button onclick="logout()" class="text-gray-500 hover:text-red-400 transition-colors" title="Sair"><i class="fa-solid fa-arrow-right-from-bracket"></i></button>
+    </div>
+  </div>
+</aside>
+
+<main class="flex-1 flex flex-col bg-dark-900 relative overflow-hidden">
+<header class="md:hidden h-16 bg-dark-800 border-b border-gray-800 flex items-center justify-between px-4">
+  <div class="flex items-center gap-2"><i class="fa-solid fa-robot text-brand-400"></i><span class="font-bold">NexusAI</span></div>
+  <button onclick="toggleMobileNav()" class="text-gray-400"><i class="fa-solid fa-bars"></i></button>
+</header>
+
+<div id="mobile-nav" class="hidden md:hidden absolute top-16 left-0 right-0 z-40 bg-dark-800 border-b border-gray-800 p-3 space-y-2">
+  <button onclick="switchTab('chat');toggleMobileNav()" class="w-full text-left p-3 rounded-lg hover:bg-dark-700">💬 Conversar com IA</button>
+  <button onclick="switchTab('image');toggleMobileNav()" class="w-full text-left p-3 rounded-lg hover:bg-dark-700">🖼️ Gerar Imagens</button>
+  <button onclick="switchTab('video');toggleMobileNav()" class="w-full text-left p-3 rounded-lg hover:bg-dark-700">🎬 Gerar Vídeos</button>
+  <button onclick="switchTab('aihub');toggleMobileNav()" class="w-full text-left p-3 rounded-lg hover:bg-dark-700">🧠 Central de IAs</button>
+  <button onclick="switchTab('projects');toggleMobileNav()" class="w-full text-left p-3 rounded-lg hover:bg-dark-700">📁 Meus Projetos</button>
+</div>
+
+<div id="content-area" class="flex-1 overflow-y-auto p-4 md:p-8 relative">
+<div id="view-chat" class="h-full flex flex-col max-w-4xl mx-auto fade-in">
+  <div class="flex-1 overflow-y-auto pr-2 space-y-6 mb-4" id="chat-history">
+    <div class="flex gap-4">
+      <div class="w-10 h-10 rounded-full bg-brand-600 flex-shrink-0 flex items-center justify-center shadow-lg shadow-brand-500/20"><i class="fa-solid fa-robot text-white"></i></div>
+      <div class="flex-1"><div class="bg-dark-800 p-4 rounded-2xl rounded-tl-none border border-gray-800 inline-block max-w-[90%]"><p class="text-gray-200 leading-relaxed">Olá! Sou a NexusAI. Posso te ajudar a criar imagens, vídeos ou conversar sobre seus projetos. O que vamos criar hoje?</p></div><span class="text-xs text-gray-500 mt-1 block">Agora</span></div>
+    </div>
+  </div>
+  <div class="relative">
+    <div class="absolute -top-12 left-0 right-0 h-12 bg-gradient-to-t from-dark-900 to-transparent pointer-events-none"></div>
+    <form onsubmit="handleChatSubmit(event)" class="relative bg-dark-800 rounded-2xl border border-gray-700 shadow-2xl focus-within:border-brand-500 focus-within:ring-1 focus-within:ring-brand-500 transition-all">
+      <textarea id="chat-input" rows="1" placeholder="Envie uma mensagem..." class="w-full bg-transparent text-white p-4 pr-12 rounded-2xl resize-none focus:outline-none max-h-32 overflow-y-auto" oninput="autoResize(this)" onkeydown="handleChatKeydown(event)"></textarea>
+      <button type="submit" class="absolute right-2 bottom-2 w-10 h-10 bg-brand-600 hover:bg-brand-500 rounded-xl flex items-center justify-center text-white transition-colors"><i class="fa-solid fa-paper-plane text-sm"></i></button>
+    </form>
+    <p class="text-center text-xs text-gray-600 mt-2">A IA local de demonstração pode cometer erros. Verifique informações importantes.</p>
+  </div>
+</div>
+
+<div id="view-image" class="hidden h-full flex flex-col max-w-4xl mx-auto fade-in">
+<h2 class="text-2xl font-bold text-white mb-6 flex items-center gap-2"><i class="fa-solid fa-wand-magic-sparkles text-brand-400"></i> Gerador de Imagens</h2>
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
+<div class="lg:col-span-1 space-y-4">
+<div class="bg-dark-800 p-5 rounded-xl border border-gray-800">
+<label class="block text-sm font-medium text-gray-400 mb-2">Prompt</label>
+<textarea id="img-prompt" class="w-full bg-dark-900 border border-gray-700 rounded-lg p-3 text-sm text-white focus:border-brand-500 focus:outline-none h-32 resize-none" placeholder="Ex: Um astronauta cyberpunk em Marte..."></textarea>
+<label class="block text-sm font-medium text-gray-400 mb-2 mt-4">Estilo</label>
+<select id="img-style" class="w-full bg-dark-900 border border-gray-700 rounded-lg p-3 text-sm text-white focus:border-brand-500 focus:outline-none">
+<option>Realista</option><option>Anime</option><option>3D Render</option><option>Pintura a Óleo</option>
+</select>
+<label class="block text-sm font-medium text-gray-400 mb-2 mt-4">Proporção</label>
+<select id="img-ratio" class="w-full bg-dark-900 border border-gray-700 rounded-lg p-3 text-sm text-white focus:border-brand-500 focus:outline-none">
+<option value="1:1">1:1</option><option value="9:16">9:16</option><option value="16:9">16:9</option>
+</select>
+<button onclick="generateImage()" class="w-full btn-primary text-white font-medium py-3 rounded-lg mt-6 flex items-center justify-center gap-2"><i class="fa-solid fa-bolt"></i> Gerar Imagem</button>
+</div></div>
+<div class="lg:col-span-2 bg-dark-800 rounded-xl border border-gray-800 flex items-center justify-center relative overflow-hidden group">
+<div id="img-placeholder" class="text-center p-8"><div class="w-20 h-20 bg-dark-700 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-500"><i class="fa-regular fa-image text-3xl"></i></div><p class="text-gray-400">Sua imagem aparecerá aqui</p></div>
+<img id="img-result" src="" class="absolute inset-0 w-full h-full object-contain hidden" alt="Imagem gerada">
+<div id="img-loading" class="absolute inset-0 bg-dark-900/80 flex flex-col items-center justify-center hidden z-10"><div class="w-12 h-12 border-4 border-brand-600 border-t-transparent rounded-full animate-spin mb-4"></div><p class="text-brand-400 font-medium animate-pulse">Criando sua obra...</p></div>
+</div></div></div>
+
+<div id="view-video" class="hidden h-full flex flex-col max-w-4xl mx-auto fade-in">
+<h2 class="text-2xl font-bold text-white mb-6 flex items-center gap-2"><i class="fa-solid fa-video text-brand-400"></i> Gerador de Vídeos</h2>
+<div class="bg-dark-800 p-6 rounded-xl border border-gray-800 mb-6">
+<div class="flex flex-col sm:flex-row gap-4 items-end">
+<div class="flex-1 w-full"><label class="block text-sm font-medium text-gray-400 mb-2">Descrição do Vídeo</label><input type="text" id="video-prompt" class="w-full bg-dark-900 border border-gray-700 rounded-lg p-3 text-sm text-white focus:border-brand-500 focus:outline-none" placeholder="Ex: Drone voando sobre uma floresta tropical..."></div>
+<button onclick="generateVideo()" class="btn-primary text-white px-6 py-3 rounded-lg font-medium whitespace-nowrap">Gerar Vídeo</button>
+</div></div>
+<div class="flex-1 bg-dark-800 rounded-xl border border-gray-800 flex items-center justify-center relative min-h-[350px]">
+<div id="video-placeholder" class="text-center"><i class="fa-solid fa-clapperboard text-4xl text-gray-600 mb-3"></i><p class="text-gray-500">Nenhum vídeo gerado ainda</p></div>
+<div id="video-player" class="hidden absolute inset-0 flex flex-col"><div class="flex-1 bg-black flex items-center justify-center relative"><div class="text-center"><i class="fa-solid fa-film text-5xl text-gray-700 mb-4"></i><p id="video-title" class="text-gray-300"></p></div><i onclick="toggleFakeVideo()" class="fa-solid fa-play text-5xl text-white opacity-80 hover:opacity-100 cursor-pointer transition-opacity absolute"></i><div class="absolute bottom-4 left-4 right-4 h-1 bg-gray-700 rounded-full overflow-hidden"><div class="w-1/3 h-full bg-brand-500"></div></div></div></div>
+<div id="video-loading" class="absolute inset-0 bg-dark-900/90 flex flex-col items-center justify-center hidden z-10"><div class="flex gap-1 mb-4"><div class="w-3 h-3 bg-brand-500 rounded-full typing-dot"></div><div class="w-3 h-3 bg-brand-500 rounded-full typing-dot"></div><div class="w-3 h-3 bg-brand-500 rounded-full typing-dot"></div></div><p class="text-white font-medium">Renderizando frames...</p><p class="text-xs text-gray-500 mt-1">Modo demonstração local</p></div>
+</div></div>
+
+
+<div id="view-aihub" class="hidden h-full flex flex-col max-w-5xl mx-auto fade-in">
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+    <div>
+      <h2 class="text-2xl font-bold text-white flex items-center gap-2"><i class="fa-solid fa-brain text-brand-400"></i> Central de IAs</h2>
+      <p class="text-sm text-gray-500 mt-1">Escolha qual inteligência você quer usar no NexusAI.</p>
+    </div>
+    <span class="text-xs px-3 py-2 rounded-full bg-brand-600/10 text-brand-300 border border-brand-600/20">Modo local</span>
+  </div>
+
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+    <button onclick="selectAI('ChatGPT')" class="ai-card bg-dark-800 border border-gray-800 rounded-xl p-5 text-left hover:border-brand-500/60 transition-all">
+      <div class="flex items-center gap-3 mb-3"><div class="w-11 h-11 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-400"><i class="fa-solid fa-comments text-xl"></i></div><div><h3 class="font-semibold text-white">ChatGPT</h3><p class="text-xs text-gray-500">Chat e texto</p></div></div>
+      <p class="text-sm text-gray-400">Conversas, ideias, roteiros, prompts e escrita.</p>
+    </button>
+
+    <button onclick="selectAI('Gemini')" class="ai-card bg-dark-800 border border-gray-800 rounded-xl p-5 text-left hover:border-brand-500/60 transition-all">
+      <div class="flex items-center gap-3 mb-3"><div class="w-11 h-11 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-400"><i class="fa-solid fa-gem text-xl"></i></div><div><h3 class="font-semibold text-white">Gemini</h3><p class="text-xs text-gray-500">Google AI</p></div></div>
+      <p class="text-sm text-gray-400">Assistente multimodal para texto e ideias.</p>
+    </button>
+
+    <button onclick="selectAI('Dreamina')" class="ai-card bg-dark-800 border border-gray-800 rounded-xl p-5 text-left hover:border-brand-500/60 transition-all">
+      <div class="flex items-center gap-3 mb-3"><div class="w-11 h-11 rounded-xl bg-pink-500/10 flex items-center justify-center text-pink-400"><i class="fa-solid fa-wand-magic-sparkles text-xl"></i></div><div><h3 class="font-semibold text-white">Dreamina</h3><p class="text-xs text-gray-500">Imagem</p></div></div>
+      <p class="text-sm text-gray-400">Criação visual, estilos e prompts para imagens.</p>
+    </button>
+
+    <button onclick="selectAI('Flow')" class="ai-card bg-dark-800 border border-gray-800 rounded-xl p-5 text-left hover:border-brand-500/60 transition-all">
+      <div class="flex items-center gap-3 mb-3"><div class="w-11 h-11 rounded-xl bg-cyan-500/10 flex items-center justify-center text-cyan-400"><i class="fa-solid fa-film text-xl"></i></div><div><h3 class="font-semibold text-white">Google Flow</h3><p class="text-xs text-gray-500">Vídeo</p></div></div>
+      <p class="text-sm text-gray-400">Criação e animação de cenas a partir de prompts.</p>
+    </button>
+
+    <button onclick="selectAI('Veo 3')" class="ai-card bg-dark-800 border border-gray-800 rounded-xl p-5 text-left hover:border-brand-500/60 transition-all">
+      <div class="flex items-center gap-3 mb-3"><div class="w-11 h-11 rounded-xl bg-violet-500/10 flex items-center justify-center text-violet-400"><i class="fa-solid fa-video text-xl"></i></div><div><h3 class="font-semibold text-white">Veo 3</h3><p class="text-xs text-gray-500">Vídeo com IA</p></div></div>
+      <p class="text-sm text-gray-400">Gerador de vídeo da Google para fluxos cinematográficos.</p>
+    </button>
+
+    <button onclick="selectAI('NexusAI')" class="ai-card bg-dark-800 border border-gray-800 rounded-xl p-5 text-left hover:border-brand-500/60 transition-all">
+      <div class="flex items-center gap-3 mb-3"><div class="w-11 h-11 rounded-xl bg-brand-600/20 flex items-center justify-center text-brand-300"><i class="fa-solid fa-robot text-xl"></i></div><div><h3 class="font-semibold text-white">NexusAI</h3><p class="text-xs text-gray-500">Local</p></div></div>
+      <p class="text-sm text-gray-400">Assistente local da interface para testes sem API.</p></div>
+  </div>
+
+  <div class="bg-dark-800 border border-gray-800 rounded-xl p-5">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+      <div><p class="text-xs text-gray-500 uppercase tracking-wider">IA selecionada</p><h3 id="selected-ai" class="text-xl font-bold text-white">ChatGPT</h3></div>
+      <select id="ai-select" onchange="selectAI(this.value)" class="bg-dark-900 border border-gray-700 rounded-lg p-3 text-sm text-white focus:border-brand-500 focus:outline-none">
+        <option>ChatGPT</option><option>Gemini</option><option>Dreamina</option><option>Flow</option><option>Veo 3</option><option>NexusAI</option>
+      </select>
+    </div>
+    <textarea id="aihub-prompt" class="w-full bg-dark-900 border border-gray-700 rounded-lg p-4 text-white focus:border-brand-500 focus:outline-none h-32 resize-none" placeholder="Digite o que você quer criar..."></textarea>
+    <div class="flex flex-col sm:flex-row gap-3 mt-4">
+      <button onclick="runSelectedAI()" class="btn-primary text-white font-medium py-3 px-5 rounded-lg flex items-center justify-center gap-2"><i class="fa-solid fa-bolt"></i> Executar IA</button>
+      <button onclick="openApiSettings()" class="bg-dark-700 hover:bg-gray-700 text-gray-200 font-medium py-3 px-5 rounded-lg"><i class="fa-solid fa-key mr-2"></i>Configurar APIs</button>
+    </div>
+    <div id="aihub-output" class="mt-5 hidden bg-dark-900 border border-gray-800 rounded-xl p-4">
+      <div class="flex items-center gap-2 mb-2 text-brand-300"><i class="fa-solid fa-sparkles"></i><span id="aihub-output-title">Resultado</span></div>
+      <p id="aihub-output-text" class="text-gray-300 whitespace-pre-wrap leading-relaxed"></p>
+    </div>
+    <p class="text-xs text-gray-600 mt-4">Importante: esta versão HTML local organiza os modelos na mesma interface, mas não embute as APIs proprietárias. As chaves e endpoints precisam ser configurados de forma segura para chamadas reais.</p>
+  </div>
+</div>
+
+<div id="view-projects" class="hidden h-full flex flex-col max-w-5xl mx-auto fade-in">
+<div class="flex justify-between items-center mb-6"><h2 class="text-2xl font-bold text-white">Meus Projetos</h2><button onclick="clearProjects()" class="text-sm text-brand-400 hover:text-brand-300"><i class="fa-solid fa-trash mr-1"></i> Limpar Histórico</button></div>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="projects-grid"></div>
+</div>
+</div></main>
+
+
+<div id="api-modal" class="hidden fixed inset-0 z-[60] bg-black/70 items-center justify-center p-4">
+  <div class="glass-panel max-w-lg w-full rounded-2xl p-6">
+    <div class="flex justify-between items-center mb-5"><h3 class="text-xl font-bold text-white">Configurar APIs</h3><button onclick="closeApiSettings()" class="text-gray-500 hover:text-white"><i class="fa-solid fa-xmark"></i></button></div>
+    <p class="text-sm text-gray-400 mb-4">Por segurança, não coloque chaves secretas diretamente em um HTML que será publicado. Para uso local, você pode manter estas configurações como referência.</p>
+    <div class="space-y-3">
+      <input id="api-openai" type="password" placeholder="OpenAI API key (não salva)" class="w-full bg-dark-900 border border-gray-700 rounded-lg p-3 text-sm text-white">
+      <input id="api-google" type="password" placeholder="Google AI API key (não salva)" class="w-full bg-dark-900 border border-gray-700 rounded-lg p-3 text-sm text-white">
+      <input id="api-dreamina" type="password" placeholder="Dreamina/serviço compatível (não salva)" class="w-full bg-dark-900 border border-gray-700 rounded-lg p-3 text-sm text-white">
+    </div>
+    <button onclick="closeApiSettings()" class="w-full btn-primary text-white font-medium py-3 rounded-lg mt-5">Fechar</button>
+  </div>
+</div>
+
+<script>
+const state={currentUser:null,projects:[],currentTab:'chat',selectedAI:'ChatGPT'};
+
+document.addEventListener('DOMContentLoaded',()=>{checkAuth();loadProjects();switchTab('chat');});
+
+function checkAuth(){
+ const saved=localStorage.getItem('nexus_user');
+ if(saved){try{state.currentUser=JSON.parse(saved);updateUIForUser();hideLogin();}catch(e){localStorage.removeItem('nexus_user');}}
+}
+function hideLogin(){const el=document.getElementById('login-screen');el.classList.add('opacity-0','pointer-events-none');setTimeout(()=>el.style.display='none',500);}
+function handleGoogleLogin(){
+ const btn=document.querySelector('#login-screen button');const original=btn.innerHTML;
+ btn.disabled=true;btn.innerHTML='<i class="fa-solid fa-circle-notch fa-spin"></i> Entrando...';
+ setTimeout(()=>{
+  const mock={name:'Usuário Google',email:'usuario@gmail.com',avatar:'https://ui-avatars.com/api/?name=Usuario+Google&background=8b5cf6&color=fff'};
+  localStorage.setItem('nexus_user',JSON.stringify(mock));state.currentUser=mock;updateUIForUser();hideLogin();
+  btn.disabled=false;btn.innerHTML=original;
+ },800);
+}
+function updateUIForUser(){
+ if(!state.currentUser)return;
+ document.getElementById('user-name').textContent=state.currentUser.name||'Usuário';
+ const av=document.getElementById('user-avatar');av.src=state.currentUser.avatar||'';av.classList.remove('hidden');
+}
+function logout(){
+ if(!confirm('Deseja sair da sua conta local?'))return;
+ localStorage.removeItem('nexus_user');state.currentUser=null;
+ location.reload();
+}
+function switchTab(tab){
+ state.currentTab=tab;
+ ['chat','image','video','aihub','projects'].forEach(t=>{
+  const view=document.getElementById('view-'+t);if(view)view.classList.toggle('hidden',t!==tab);
+  const nav=document.getElementById('nav-'+t);
+  if(nav){
+   nav.className='nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all '+(t===tab?'bg-brand-600/10 text-brand-400 border border-brand-600/20':'text-gray-400 hover:bg-dark-700 hover:text-white');
+  }
+ });
+}
+function toggleMobileNav(){document.getElementById('mobile-nav').classList.toggle('hidden');}
+function autoResize(el){el.style.height='auto';el.style.height=Math.min(el.scrollHeight,128)+'px';}
+function handleChatKeydown(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();document.querySelector('#view-chat form').requestSubmit();}}
+function escapeHTML(str){return String(str).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));}
+function now(){return new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});}
+
+function addChatMessage(text,role='ai'){
+ const history=document.getElementById('chat-history');
+ const wrap=document.createElement('div');wrap.className='flex gap-4 fade-in';
+ if(role==='user'){
+  wrap.innerHTML='<div class="flex-1 text-right"><div class="bg-brand-600 p-4 rounded-2xl rounded-tr-none inline-block max-w-[90%] text-left"><p class="text-white leading-relaxed whitespace-pre-wrap">'+escapeHTML(text)+'</p></div><span class="text-xs text-gray-500 mt-1 block">'+now()+'</span></div><div class="w-10 h-10 rounded-full bg-gray-700 flex-shrink-0 flex items-center justify-center"><i class="fa-solid fa-user text-white"></i></div>';
+ }else{
+  wrap.innerHTML='<div class="w-10 h-10 rounded-full bg-brand-600 flex-shrink-0 flex items-center justify-center shadow-lg shadow-brand-500/20"><i class="fa-solid fa-robot text-white"></i></div><div class="flex-1"><div class="bg-dark-800 p-4 rounded-2xl rounded-tl-none border border-gray-800 inline-block max-w-[90%]"><p class="text-gray-200 leading-relaxed whitespace-pre-wrap">'+escapeHTML(text)+'</p></div><span class="text-xs text-gray-500 mt-1 block">'+now()+'</span></div>';
+ }
+ history.appendChild(wrap);history.scrollTop=history.scrollHeight;return wrap;
+}
+function localAIResponse(text){
+ const q=text.toLowerCase();
+ if(q.includes('imagem'))return 'Claro! Abra “Gerar Imagens” no menu. Nesta versão local, o botão demonstra o fluxo de geração; para gerar imagens de verdade, será necessário conectar uma API de geração.';
+ if(q.includes('vídeo')||q.includes('video'))return 'Você pode abrir “Gerar Vídeos”. A versão atual demonstra o processo localmente. Uma API de vídeo pode ser conectada depois.';
+ if(q.includes('olá')||q.includes('ola')||q.includes('oi'))return 'Olá! 👋 Sou a NexusAI. Posso organizar ideias, criar prompts, roteiros e ajudar a estruturar seus projetos.';
+ if(q.includes('projeto'))return 'Se quiser, use “Meus Projetos” para visualizar os itens salvos nesta demonstração local.';
+ return 'Entendi! Como estou rodando em um único arquivo HTML local, esta é uma IA de demonstração. Posso responder comandos básicos e você pode conectar uma API real depois.';
+}
+function handleChatSubmit(e){
+ e.preventDefault();const input=document.getElementById('chat-input');const text=input.value.trim();if(!text)return;
+ addChatMessage(text,'user');input.value='';autoResize(input);
+ const typing=addChatMessage('Digitando...','ai');
+ setTimeout(()=>{typing.remove();addChatMessage(localAIResponse(text),'ai');},650);
+}
+
+function saveProject(project){
+ state.projects.unshift({...project,id:Date.now(),date:new Date().toLocaleString('pt-BR')});
+ state.projects=state.projects.slice(0,30);
+ localStorage.setItem('nexus_projects',JSON.stringify(state.projects));renderProjects();
+}
+function loadProjects(){
+ try{state.projects=JSON.parse(localStorage.getItem('nexus_projects')||'[]');}catch(e){state.projects=[];}
+ renderProjects();
+}
+function renderProjects(){
+ const grid=document.getElementById('projects-grid');if(!grid)return;
+ if(!state.projects.length){grid.innerHTML='<div class="col-span-full text-center py-20 text-gray-500"><i class="fa-regular fa-folder-open text-4xl mb-3 opacity-50"></i><p>Você ainda não tem projetos salvos.</p></div>';return;}
+ grid.innerHTML=state.projects.map(p=>{
+  const icon=p.type==='image'?'fa-image':p.type==='video'?'fa-film':p.type==='ai'?'fa-brain':'fa-message';
+  return '<div class="bg-dark-800 border border-gray-800 rounded-xl p-4 hover:border-brand-500/40 transition-all"><div class="flex items-center gap-3 mb-3"><div class="w-10 h-10 rounded-lg bg-brand-600/20 text-brand-400 flex items-center justify-center"><i class="fa-solid '+icon+'"></i></div><div class="min-w-0"><h3 class="font-semibold text-white truncate">'+escapeHTML(p.title||'Projeto')+'</h3><p class="text-xs text-gray-500">'+escapeHTML(p.date||'')+'</p></div></div><p class="text-sm text-gray-400 line-clamp-3">'+escapeHTML(p.prompt||p.content||'Sem descrição')+'</p></div>';
+ }).join('');
+}
+function clearProjects(){
+ if(!state.projects.length)return;
+ if(confirm('Limpar todos os projetos salvos localmente?')){state.projects=[];localStorage.removeItem('nexus_projects');renderProjects();}
+}
+
+
+function selectAI(name){
+ state.selectedAI=name;
+ const title=document.getElementById('selected-ai'); if(title) title.textContent=name;
+ const select=document.getElementById('ai-select'); if(select) select.value=name;
+}
+function runSelectedAI(){
+ const prompt=document.getElementById('aihub-prompt').value.trim();
+ if(!prompt){alert('Digite um prompt primeiro.');return;}
+ const ai=state.selectedAI;
+ const out=document.getElementById('aihub-output');
+ const text=document.getElementById('aihub-output-text');
+ const title=document.getElementById('aihub-output-title');
+ out.classList.remove('hidden'); title.textContent='Resultado — '+ai;
+ const messages={
+  'ChatGPT':'Modo local: prompt recebido pelo módulo ChatGPT. Para resposta real, conecte uma API OpenAI por um backend seguro.',
+  'Gemini':'Modo local: prompt recebido pelo módulo Gemini. Para resposta real, conecte a API do Google por um backend seguro.',
+  'Dreamina':'Modo local: prompt preparado para geração de imagem. Para geração real, conecte o serviço/API correspondente.',
+  'Flow':'Modo local: prompt preparado para animação e vídeo. Para geração real, conecte o serviço compatível.',
+  'Veo 3':'Modo local: prompt preparado para vídeo. Para geração real, conecte o serviço/API correspondente.',
+  'NexusAI':'Modo local: prompt processado pela interface NexusAI. Nenhuma API externa foi chamada.'
+ };
+ text.textContent=messages[ai]+'\\n\\nPrompt:\\n'+prompt;
+ saveProject({type:'ai',title:ai+' — prompt',prompt});
+}
+function openApiSettings(){const m=document.getElementById('api-modal');m.classList.remove('hidden');m.classList.add('flex');}
+function closeApiSettings(){const m=document.getElementById('api-modal');m.classList.add('hidden');m.classList.remove('flex');}
+
+function generateImage(){
+ const prompt=document.getElementById('img-prompt').value.trim();
+ const style=document.getElementById('img-style').value;
+ const ratio=document.getElementById('img-ratio').value;
+ if(!prompt){alert('Digite um prompt primeiro.');document.getElementById('img-prompt').focus();return;}
+ const loading=document.getElementById('img-loading'),placeholder=document.getElementById('img-placeholder'),img=document.getElementById('img-result');
+ loading.classList.remove('hidden');img.classList.add('hidden');placeholder.classList.add('hidden');
+ setTimeout(()=>{
+  loading.classList.add('hidden');img.src=createPlaceholderImage(prompt,style,ratio);img.classList.remove('hidden');
+  saveProject({type:'image',title:'Imagem — '+style,prompt:prompt+' | Estilo: '+style+' | Proporção: '+ratio});
+ },1200);
+}
+function createPlaceholderImage(prompt,style,ratio){
+ const size=ratio==='9:16'?'600x1066':ratio==='16:9'?'1200x675':'900x900';
+ const text=encodeURIComponent('NexusAI\\n'+prompt.slice(0,55));
+ return 'https://placehold.co/'+size+'/0a0a0a/a78bfa?text='+text;
+}
+
+function generateVideo(){
+ const prompt=document.getElementById('video-prompt').value.trim();
+ if(!prompt){alert('Digite uma descrição para o vídeo primeiro.');document.getElementById('video-prompt').focus();return;}
+ const loading=document.getElementById('video-loading'),placeholder=document.getElementById('video-placeholder'),player=document.getElementById('video-player');
+ loading.classList.remove('hidden');placeholder.classList.add('hidden');player.classList.add('hidden');
+ setTimeout(()=>{loading.classList.add('hidden');player.classList.remove('hidden');document.getElementById('video-title').textContent=prompt;saveProject({type:'video',title:'Vídeo — NexusAI',prompt});},1600);
+}
+function toggleFakeVideo(){
+ alert('Player demonstrativo: conecte uma API de vídeo para reproduzir um arquivo real.');
+}
+</script>
+</body>
+</html>
